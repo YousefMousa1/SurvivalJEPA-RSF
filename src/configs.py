@@ -2,8 +2,6 @@
 
 import argparse
 
-from src.benchmark.utils import MODEL_NAME_TO_MODEL_MAP
-
 
 def str2bool(v):
     """https://stackoverflow.com/questions/15008758/
@@ -17,6 +15,11 @@ def build_parser():
 
     parser = argparse.ArgumentParser()
     parser.register("type", "bool", str2bool)
+    try:
+        from src.benchmark.utils import MODEL_NAME_TO_MODEL_MAP
+        probe_choices = list(MODEL_NAME_TO_MODEL_MAP.keys())
+    except Exception:
+        probe_choices = ["mlp"]
 
     ###########################################################################
     # #### Data Config ########################################################
@@ -375,7 +378,7 @@ def build_parser():
         "--probe_model",
         type=str,
         default="mlp",
-        choices=list(MODEL_NAME_TO_MODEL_MAP.keys()),
+        choices=probe_choices,
         help="Model to use for probing.",
     )
     parser.add_argument(

@@ -11,6 +11,7 @@ from src.datasets.higgs import Higgs
 from src.datasets.higgs_embedded import HiggsEmbedded
 from src.datasets.jannis import Jannis
 from src.datasets.jannis_embedded import JannisEmbedded
+from src.datasets.metabric_table6 import MetabricTable6
 
 DATASET_NAME_TO_DATASET_MAP = {
     "adult": Adult,
@@ -19,6 +20,7 @@ DATASET_NAME_TO_DATASET_MAP = {
     "helena": Helena,
     "higgs": Higgs,
     "jannis": Jannis,
+    "metabric_table6": MetabricTable6,
     "helena_embedded": HelenaEmbedded,
     "jannis_embedded": JannisEmbedded,
     "aloi_embedded": AloiEmbedded,

@@ -13,12 +13,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
 
-from run_benchmark import set_callbacks_loggers
-from src.benchmark.utils import (
-    MODEL_CONFIG_BASE_PATH,
-    MODEL_NAME_TO_MODEL_MAP,
-    get_loss_from_task,
-)
 from src.datasets.online_dataset import OnlineDataset, OnlineDatasetArgs
 from src.torch_dataset import DataModule, TorchDataset
 from src.utils.log_utils import _debug_values, make_job_name
@@ -244,6 +238,12 @@ class Trainer:
                 collapse_metrics["KL"] = np.mean(collapse_metrics["KL"])
                 collapse_metrics["euclidean"] = np.mean(collapse_metrics["euclidean"])
 
+                from src.benchmark.utils import (
+                    MODEL_CONFIG_BASE_PATH,
+                    MODEL_NAME_TO_MODEL_MAP,
+                    get_loss_from_task,
+                )
+
                 model_class: BaseModel = MODEL_NAME_TO_MODEL_MAP[self.probe_model]
 
                 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -312,6 +312,8 @@ class Trainer:
                 model = model_class(loss=loss_fn, **dataset_args)
                 summary(model, input_size=model_args.summary_input)
                 model = model.float()
+
+                from run_benchmark import set_callbacks_loggers
 
                 callbacks, loggers = set_callbacks_loggers(dataset_args)
 
