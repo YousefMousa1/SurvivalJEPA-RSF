@@ -147,3 +147,96 @@ Each configuration file follows the naming convention:
 | **Gradient Boosted Decision Trees (GBDT)** |          |          |          |          |          |          |      |
 | XGBoost        | **0.874** | 0.368    | 0.720    | 0.951    | 0.462    | **0.729** | N/A  |
 | CatBoost       | 0.873    | 0.381    | 0.721    | 0.946    | 0.430    | 0.726    | N/A  |
+
+## METABRIC (T-JEPA + RSF) Workflow
+
+This repo includes the METABRIC Table-6 pipeline to pretrain T-JEPA, fine-tune with a Cox
+head, export embeddings, and run RSF in the companion RSF repo/branch.
+
+### Overview
+
+1. Prepare METABRIC Table-6 dataset (clinical + Table-6 genes) into a CSV with `day` and
+   `status` columns.
+2. Pretrain T-JEPA on those features.
+3. Fine-tune the encoder with Cox partial likelihood at a 5-year horizon.
+4. Export CLS embeddings for each sample.
+5. Run RSF on the embedding CSV (in the RSF repo/branch).
+
+### Files added for METABRIC
+
+- `src/datasets/metabric_table6.py`: dataset loader for METABRIC Table-6 features.
+- `export_metabric_embeddings.py`: export CLS embeddings from a trained checkpoint.
+- `finetune_cox_metabric.py`: Cox fine-tuning script (5-year horizon).
+
+### Commands (example)
+
+Pretrain T-JEPA:
+```bash
+python run.py \
+  --data_set metabric_table6 \
+  --data_path /path/to/brca_metabric \
+  --batch_size 256 \
+  --exp_train_total_epochs 50 \
+  --model_dim_hidden 64 \
+  --model_num_layers 4 \
+  --model_num_heads 8 \
+  --model_dim_feedforward 256 \
+  --pred_embed_dim 64 \
+  --pred_num_layers 2 \
+  --pred_num_heads 4 \
+  --pred_dim_feedforward 128 \
+  --probe_cadence 0 \
+  --model_feature_index_embedding false
+```
+
+Fine-tune with Cox (5-year horizon):
+```bash
+python finetune_cox_metabric.py \
+  --data_csv /path/to/brca_metabric/metabric_rsf_table6.csv \
+  --checkpoint /path/to/tjepa_checkpoint.pth \
+  --output_checkpoint /path/to/finetuned.pth \
+  --horizon_years 5 \
+  --epochs 50 \
+  --batch_size 256 \
+  --lr 1e-3 \
+  --weight_decay 1e-4 \
+  --model_dim_hidden 64 \
+  --model_num_layers 4 \
+  --model_num_heads 8 \
+  --model_dim_feedforward 256 \
+  --model_feature_type_embedding
+```
+
+Export embeddings:
+```bash
+python export_metabric_embeddings.py \
+  --data_set metabric_table6 \
+  --data_path /path/to/brca_metabric \
+  --checkpoint /path/to/finetuned.pth \
+  --input_csv /path/to/brca_metabric/metabric_rsf_table6.csv \
+  --output_csv /path/to/brca_metabric/metabric_tjepa_embeddings_64_cox5y.csv \
+  --model_dim_hidden 64 \
+  --model_num_layers 4 \
+  --model_num_heads 8 \
+  --model_dim_feedforward 256 \
+  --pred_embed_dim 64 \
+  --pred_num_layers 2 \
+  --pred_num_heads 4 \
+  --pred_dim_feedforward 128 \
+  --model_feature_index_embedding false
+```
+
+### RSF step (other repo/branch)
+
+The RSF code is on the `rsf-main` branch of the same GitHub repo. To run RSF on the
+embeddings:
+```bash
+git checkout rsf-main
+python run_rsf.py \
+  --data /path/to/brca_metabric/metabric_tjepa_embeddings_64_cox5y.csv \
+  --dataset Clinical_Gene \
+  --method 1 \
+  --feature-counts 64 \
+  --n-trees 50 \
+  --years 5 10 15
+```
